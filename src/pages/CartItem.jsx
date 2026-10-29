@@ -1,68 +1,100 @@
-import { ArrowLeft, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
-import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
-import Navbar from '../components/Navbar.jsx';
-import { decreaseQuantity, increaseQuantity, removeFromCart } from '../redux/CartSlice.jsx';
+import React from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { removeItem, updateQuantity } from '../CartSlice';
+import '../CartItem.css';
 
-function imageUrl(image) {
-  return `https://images.unsplash.com/${image}?auto=format&fit=crop&w=360&q=80`;
-}
-
-export default function CartItem() {
+const CartItem = ({ onContinueShopping }) => {
+  const cart = useSelector((state) => state.cart.items);
   const dispatch = useDispatch();
-  const items = useSelector((state) => state.cart.items);
-  const itemCount = items.reduce((total, item) => total + item.quantity, 0);
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  // Calculate total amount for all products in the cart
+  const calculateTotalAmount = () => {
+    let total = 0;
+    cart.forEach((item) => {
+      const costNum = parseFloat(item.cost.toString().replace('$', ''));
+      total += costNum * item.quantity;
+    });
+    return total.toFixed(2);
+  };
+
+  const handleContinueShopping = (e) => {
+    if (onContinueShopping) {
+      onContinueShopping(e);
+    }
+  };
+
+  const handleCheckoutShopping = (e) => {
+    alert('Functionality to be added for future reference');
+  };
+
+  const handleIncrement = (item) => {
+    dispatch(updateQuantity({ name: item.name, quantity: item.quantity + 1 }));
+  };
+
+  const handleDecrement = (item) => {
+    if (item.quantity > 1) {
+      dispatch(updateQuantity({ name: item.name, quantity: item.quantity - 1 }));
+    } else {
+      dispatch(removeItem(item.name));
+    }
+  };
+
+  const handleRemove = (item) => {
+    dispatch(removeItem(item.name));
+  };
+
+  // Calculate total cost based on quantity for an item
+  const calculateTotalCost = (item) => {
+    const costNum = parseFloat(item.cost.toString().replace('$', ''));
+    return (costNum * item.quantity).toFixed(2);
+  };
 
   return (
-    <div className="page-shell">
-      <Navbar />
-      <main className="cart-main">
-        <div className="cart-title-row">
-          <div><p className="eyebrow">YOUR LITTLE INDOOR JUNGLE</p><h1>Shopping <em>cart.</em></h1></div>
-          <span className="cart-item-total"><ShoppingBag size={17} /> {itemCount} {itemCount === 1 ? 'plant' : 'plants'}</span>
-        </div>
-        {items.length === 0 ? (
-          <section className="empty-cart">
-            <span className="empty-cart-mark"><ShoppingBag size={26} strokeWidth={1.5} /></span>
-            <h2>Your cart is taking a breather.</h2>
-            <p>There are plenty of leafy friends waiting to come home.</p>
-            <Link className="button button-dark" to="/plants">Browse plants <ArrowLeft size={16} /></Link>
-          </section>
-        ) : (
-          <div className="cart-layout">
-            <section className="cart-lines" aria-label="Items in your cart">
-              <div className="cart-column-head"><span>PLANT</span><span>PRICE</span><span>QUANTITY</span><span>TOTAL</span></div>
-              {items.map((item) => (
-                <article className="cart-line" key={item.id}>
-                  <div className="cart-product">
-                    <img src={imageUrl(item.image)} alt={item.name} />
-                    <div><h2>{item.name}</h2><span>Houseplant · Indoor</span><button className="remove-button" type="button" onClick={() => dispatch(removeFromCart(item.id))}><Trash2 size={14} /> Remove</button></div>
-                  </div>
-                  <span className="cart-unit-price">${item.price.toFixed(2)}</span>
-                  <div className="quantity-control" aria-label={`Quantity of ${item.name}`}>
-                    <button type="button" onClick={() => dispatch(decreaseQuantity(item.id))} aria-label={`Decrease ${item.name} quantity`}><Minus size={14} /></button>
-                    <span aria-live="polite">{item.quantity}</span>
-                    <button type="button" onClick={() => dispatch(increaseQuantity(item.id))} aria-label={`Increase ${item.name} quantity`}><Plus size={14} /></button>
-                  </div>
-                  <span className="cart-line-total">${(item.price * item.quantity).toFixed(2)}</span>
-                </article>
-              ))}
-              <Link className="back-to-plants" to="/plants"><ArrowLeft size={15} /> Continue shopping</Link>
-            </section>
-            <aside className="order-summary">
-              <p className="eyebrow">A GOOD CHOICE</p>
-              <h2>Order summary</h2>
-              <div className="summary-row"><span>Plants ({itemCount})</span><span>${total.toFixed(2)}</span></div>
-              <div className="summary-row"><span>Delivery</span><span className="delivery-note">On us</span></div>
-              <div className="summary-total"><span>Total</span><strong>${total.toFixed(2)}</strong></div>
-              <button className="button button-dark checkout-button" type="button" onClick={() => window.alert('Coming soon! Checkout is being planted.')}>Checkout <span>→</span></button>
-              <p className="checkout-note">A little green, on its way to you.</p>
-            </aside>
+    <div className="cart-container">
+      <h2 style={{ color: 'black' }}>Total Plants : {cart.reduce((total, item) => total + item.quantity, 0)}</h2>
+      <h2 className="total_cart_amount">Total Cart Amount: ${calculateTotalAmount()}</h2>
+      <div>
+        {cart.map((item) => (
+          <div className="cart-item" key={item.name}>
+            <img className="cart-item-image" src={item.image} alt={item.name} />
+            <div className="cart-item-details">
+              <div className="cart-item-name">{item.name}</div>
+              <div className="cart-item-cost">{item.cost}</div>
+              <div className="cart-item-quantity">
+                <button
+                  className="cart-item-button cart-item-button-dec"
+                  onClick={() => handleDecrement(item)}
+                >
+                  -
+                </button>
+                <span className="cart-item-quantity-value">{item.quantity}</span>
+                <button
+                  className="cart-item-button cart-item-button-inc"
+                  onClick={() => handleIncrement(item)}
+                >
+                  +
+                </button>
+              </div>
+              <div className="cart-item-total">Total: ${calculateTotalCost(item)}</div>
+              <button className="cart-item-delete" onClick={() => handleRemove(item)}>
+                Delete
+              </button>
+            </div>
           </div>
-        )}
-      </main>
-      <footer className="site-footer"><span>PARADISE NURSERY</span><span>Rooted in good things.</span></footer>
+        ))}
+      </div>
+      <div style={{ marginTop: '20px', color: 'black' }} className="total_cart_amount"></div>
+      <div className="continue_shopping_btn">
+        <button className="get-started-button1" onClick={(e) => handleContinueShopping(e)}>
+          Continue Shopping
+        </button>
+        <br />
+        <button className="get-started-button1" onClick={(e) => handleCheckoutShopping(e)}>
+          Checkout
+        </button>
+      </div>
     </div>
   );
-}
+};
+
+export default CartItem;
